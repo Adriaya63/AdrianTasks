@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AdrianTasks</string>
+    <string name="btn_addTask">Nueva Tarea</string>
+    <string name="id_edit">Editar</string>
+</resources>
