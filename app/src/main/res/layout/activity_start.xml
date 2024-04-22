@@ -48,4 +48,6 @@
         android:layout_below="@id/btn_enter"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="16dp"/>
+
+
 </RelativeLayout>

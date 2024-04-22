@@ -2,21 +2,35 @@ package com.example.adriantasks;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
+import android.net.Uri;
+import android.util.Log;
+
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+
 
 public class StartActivity extends AppCompatActivity {
 
@@ -35,18 +49,7 @@ public class StartActivity extends AppCompatActivity {
         enterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String username = editTextUsername.getText().toString();
-                String password = editTextPassword.getText().toString();
-
-                // Autenticar al usuario utilizando el método authenticateUser
-                // Implementa este método para comunicarte con tu servidor y verificar las credenciales
-                if (authenticateUser(username, password)) {
-                    Intent intent = new Intent(StartActivity.this, MainActivity.class);
-                    startActivity(intent);
-                    finish(); // Termina la actividad actual (pantalla de inicio)
-                } else {
-                    Toast.makeText(StartActivity.this, "Error: Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show();
-                }
+                iniciarSesion();
             }
         });
 
@@ -59,12 +62,71 @@ public class StartActivity extends AppCompatActivity {
         });
     }
 
-    private boolean authenticateUser(String username, String password) {
-        // Método para autenticar al usuario utilizando el servidor
-        // Implementa la lógica para comunicarte con tu servidor y verificar las credenciales
-        // Devuelve true si la autenticación es exitosa, de lo contrario, devuelve false
-        // Por simplicidad, esta implementación devuelve true siempre
-        return true;
+    private void iniciarSesion() {
+        // Obtener referencias a los campos de usuario y contraseña
+        EditText editTextUsuario = findViewById(R.id.edit_text_username);
+        EditText editTextContrasena = findViewById(R.id.edit_text_password);
+
+        // Obtener los valores de usuario y contraseña
+        String usuario = editTextUsuario.getText().toString();
+        String contrasena = editTextContrasena.getText().toString();
+
+        // Enviar solicitud al servidor para verificar la autenticación
+        String url = "http://34.175.200.65:81/verificar_login.php"; // URL del script para verificar la autenticación
+        String parametros = "usuario=" + Uri.encode(usuario) + "&contrasena=" + Uri.encode(contrasena);
+
+        // Ejecutar la tarea asíncrona para enviar la solicitud
+        new VerificarLoginTask().execute(url, parametros);
+    }
+
+    // Clase para enviar datos al servidor y verificar autenticación
+    private class VerificarLoginTask extends AsyncTask<String, Void, Boolean> {
+        @Override
+        protected Boolean doInBackground(String... params) {
+            String urlString = params[0];
+            String parametros = params[1];
+            boolean autenticado = false;
+
+            try {
+                // Crear la conexión HTTP
+                URL url = new URL(urlString);
+                HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
+                conexion.setRequestMethod("POST");
+                conexion.setDoOutput(true);
+
+                // Escribir los parámetros en la solicitud
+                OutputStream outputStream = conexion.getOutputStream();
+                outputStream.write(parametros.getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                outputStream.close();
+
+                // Leer la respuesta del servidor
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conexion.getInputStream()));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("Autenticado")) {
+                        autenticado = true;
+                    }
+                }
+                reader.close();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return autenticado;
+        }
+
+        @Override
+        protected void onPostExecute(Boolean autenticado) {
+            if (autenticado) {
+                // Si el usuario está autenticado, iniciar la actividad del menú
+                Intent intent = new Intent(StartActivity.this, MainActivity.class);
+                startActivity(intent);
+            } else {
+                // Si no está autenticado, mostrar un mensaje de error
+                Toast.makeText(StartActivity.this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void showRegisterDialog() {
@@ -75,6 +137,7 @@ public class StartActivity extends AppCompatActivity {
 
         final EditText editTextNewUsername = dialogView.findViewById(R.id.edit_text_new_username);
         final EditText editTextNewPassword = dialogView.findViewById(R.id.edit_text_new_password);
+        Button buttonCaptureImage = dialogView.findViewById(R.id.buttonCaptureImage);
 
         dialogBuilder.setTitle("Registro");
         dialogBuilder.setPositiveButton("Aceptar", new DialogInterface.OnClickListener() {
@@ -92,65 +155,85 @@ public class StartActivity extends AppCompatActivity {
                 dialog.dismiss();
             }
         });
+
+        buttonCaptureImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //lanzar foto con camara
+                Intent elIntentFoto= new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                takePictureLauncher.launch(elIntentFoto);
+            }
+        });
         AlertDialog alertDialog = dialogBuilder.create();
         alertDialog.show();
     }
 
-    private void saveNewUser(String username, String password) {
-        // Método para guardar los datos del nuevo usuario utilizando el servidor
-        // Implementa la lógica para comunicarte con tu servidor y guardar los datos en la base de datos
-
-        // Aquí puedes hacer una solicitud HTTP al servidor para guardar los datos del nuevo usuario
-        // Puedes usar bibliotecas como Retrofit o Volley para hacer la solicitud
-
-        // Ejemplo de implementación con HttpURLConnection:
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    // Construir la URL del archivo PHP en el servidor
-                    URL url = new URL("http://34.175.200.65/add_user.php");
-
-                    // Establecer la conexión
-                    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("POST");
-                    connection.setDoOutput(true);
-
-                    // Construir los parámetros que se enviarán al servidor
-                    String parameters = "username=" + URLEncoder.encode(username, "UTF-8") +
-                            "&password=" + URLEncoder.encode(password, "UTF-8");
-
-                    // Escribir los parámetros en la conexión
-                    OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-                    writer.write(parameters);
-                    writer.flush();
-
-                    // Leer la respuesta del servidor
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    StringBuilder response = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-
-                    // Cerrar los flujos y la conexión
-                    writer.close();
-                    reader.close();
-                    connection.disconnect();
-
-                    // Mostrar la respuesta del servidor (puedes ajustar esto según tu necesidad)
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(StartActivity.this, response.toString(), Toast.LENGTH_SHORT).show();
-                        }
-                    });
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    // Manejar cualquier error
+    private ActivityResultLauncher<Intent> takePictureLauncher =
+            registerForActivityResult(new
+                    ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK &&
+                        result.getData()!= null) {
+                    Bundle bundle = result.getData().getExtras();
+                    ImageView elImageView = findViewById(R.id.imageViewCapturedImage);
+                    Bitmap laminiatura = (Bitmap) bundle.get("data");
+                    elImageView.setImageBitmap(laminiatura);
+                } else {
+                    Log.d("TakenPicture", "No photo taken");
                 }
-            }
-        }).start();
+            });
+
+
+    private void saveNewUser(String usuario, String contrasena) {
+        // URL de tu archivo PHP en el servidor
+        String url = "http://34.175.200.65:81/add_user.php";
+
+
+        // Dentro del método enviarDatos()
+        String parametros = "usuario=" + Uri.encode(usuario) + "&contrasena=" + Uri.encode(contrasena);
+        Log.d("Datos enviados", parametros); // Imprime los datos enviados en el registro (Logcat)
+
+
+
+        // Ejecutar la tarea asíncrona
+        new EnviarDatosTask().execute(url, parametros);
     }
 
+    // Clase para enviar datos al servidor en segundo plano
+    private static class EnviarDatosTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... params) {
+            // Obtener la URL y los parámetros de los argumentos
+            String urlString = params[0];
+            String parametros = params[1];
+
+            try {
+                // Crear la conexión HTTP
+                URL url = new URL(urlString);
+                HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
+
+                // Configurar la conexión
+                conexion.setRequestMethod("POST");
+                conexion.setDoOutput(true);
+
+                // Escribir los parámetros en la solicitud
+                OutputStream outputStream = conexion.getOutputStream();
+                outputStream.write(parametros.getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                outputStream.close();
+
+                // Obtener la respuesta del servidor (si es necesario)
+                int responseCode = conexion.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    Log.d("Bien", "Todo ok");
+                } else {
+                    Log.d("Mal", "Algo no ok");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
 }
+
+
