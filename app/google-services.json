@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "206243900587",
+    "project_id": "adriantasks-b917b",
+    "storage_bucket": "adriantasks-b917b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:206243900587:android:bd8d836330091392c79bee",
+        "android_client_info": {
+          "package_name": "com.example.adriantasks"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjyFb1zpLRHMbmfbfRzGZQGQtntTAKC7M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

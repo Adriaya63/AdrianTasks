@@ -53,18 +53,6 @@ public class StartActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
 
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(new OnCompleteListener<String>() {
-                    @Override
-                    public void onComplete(@NonNull Task<String> task) {
-                        if (!task.isSuccessful()) {
-                            return;
-                        }
-                        String token = task.getResult();
-                        Log.d("Token",token);
-                    }
-                });
-
         editTextUsername = findViewById(R.id.edit_text_username);
         editTextPassword = findViewById(R.id.edit_text_password);
 
@@ -81,6 +69,14 @@ public class StartActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 showRegisterDialog();
+            }
+        });
+
+        Button welcomeMessageButton = findViewById(R.id.btn_welcome_message);
+        welcomeMessageButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                enviarTokenFCM();
             }
         });
     }
@@ -262,7 +258,70 @@ public class StartActivity extends AppCompatActivity {
             }
             return null;
         }
+
+
+
     }
+
+    private void enviarTokenFCM() {
+        String url = "http://34.175.200.65:81/FCM.php"; // URL del script PHP para enviar el mensaje de bienvenida
+
+        // Obtener el token FCM
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(new OnCompleteListener<String>() {
+                    @Override
+                    public void onComplete(@NonNull Task<String> task) {
+                        if (!task.isSuccessful()) {
+                            return;
+                        }
+                        String token = task.getResult();
+                        Log.d("Token", token);
+
+                        // Ejecutar la tarea asíncrona para enviar el token al servidor
+                        new EnviarTokenFCMTask().execute(url, token);
+                    }
+                });
+    }
+
+    // Clase AsyncTask para enviar el token FCM al servidor
+
+
+    private static class EnviarTokenFCMTask extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... params) {
+            // Obtener la URL y el token de los argumentos
+            String urlString = params[0];
+            String token = params[1];
+
+            try {
+                // Crear la conexión HTTP
+                URL url = new URL(urlString);
+                HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
+
+                // Configurar la conexión
+                conexion.setRequestMethod("POST");
+                conexion.setDoOutput(true);
+
+                // Escribir el token en la solicitud
+                OutputStream outputStream = conexion.getOutputStream();
+                outputStream.write(("token=" + URLEncoder.encode(token, "UTF-8")).getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                outputStream.close();
+
+                // Obtener la respuesta del servidor (si es necesario)
+                int responseCode = conexion.getResponseCode();
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    Log.d("MensajeBienvenida", "Mensaje enviado correctamente");
+                } else {
+                    Log.d("MensajeBienvenida", "Error al enviar el mensaje");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+    }
+
 }
 
 
