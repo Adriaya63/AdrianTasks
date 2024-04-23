@@ -2,20 +2,40 @@ package com.example.adriantasks;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import android.util.Base64;
+
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
 //Clase principal de la aplicacion
@@ -30,6 +50,13 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Intent intent = getIntent();
+        String name = intent.getStringExtra("usuario");
+
+        Log.d("User","Nombre user: "+name);
+
+        cargarUsuario(name);
 
         dbHelper = new DBHelper(this);
         taskList = dbHelper.getAllTasks();
@@ -60,6 +87,101 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void cargarUsuario(String name){
+        TextView textViewUser = findViewById(R.id.textViewUser);
+        textViewUser.setText("Usuario: " + name);
+
+        // URL del script para recuperar la imagen
+        String url = "http://34.175.200.65:81/get_image.php"; // URL del script para recuperar la imagen
+        String parametros = "usuario=" + Uri.encode(name);
+        Log.d("Datos enviados", parametros);
+
+        // Ejecutar la tarea asíncrona para recuperar la imagen
+        new ObtenerImagenTask().execute(url, parametros);
+    }
+
+    private void mostrarImagen(Bitmap imagen) {
+        ImageView imageView = findViewById(R.id.imageViewProfile);
+        imageView.setImageBitmap(imagen);
+    }
+
+    private class ObtenerImagenTask extends AsyncTask<String, Void, Bitmap> {
+        @Override
+        protected Bitmap doInBackground(String... params) {
+            String urlString = params[0];
+            String parametros = params[1];
+            Bitmap imagen = null;
+
+            try {
+                URL url = new URL(urlString);
+                HttpURLConnection conexion = (HttpURLConnection) url.openConnection();
+                conexion.setRequestMethod("POST");
+                conexion.setDoOutput(true);
+
+                // Escribir los parámetros en la solicitud
+                OutputStream outputStream = conexion.getOutputStream();
+                outputStream.write(parametros.getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                outputStream.close();
+
+
+                // Establecer la conexión HTTP y recibir la respuesta del servidor
+                int responseCode = conexion.getResponseCode();
+
+                // Verificar si la conexión fue exitosa (código de respuesta HTTP 200)
+                if (responseCode == HttpURLConnection.HTTP_OK) {
+                    // Leer la respuesta del servidor
+                    InputStream inputStream = conexion.getInputStream();
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                    StringBuilder stringBuilder = new StringBuilder();
+                    String line;
+
+                    // Leer línea por línea y construir el StringBuilder
+                    while ((line = bufferedReader.readLine()) != null) {
+                        Log.d("Buff",line);
+                        stringBuilder.append(line);
+                    }
+
+                    // Cerrar el BufferedReader y el InputStream
+                    bufferedReader.close();
+                    inputStream.close();
+
+                    // Obtener el string de la respuesta del servidor
+                    String base64String = stringBuilder.toString();
+                    Log.d("Data","Image: "+base64String);
+
+                    // Decodificar la cadena base64 en un array de bytes
+                    byte[] decodedBytes = Base64.decode(base64String, Base64.DEFAULT);
+
+                    // Crear un Bitmap a partir de los bytes decodificados
+                    imagen = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
+
+
+                } else {
+                    // Si la conexión no fue exitosa, manejar el error adecuadamente
+                    Log.d("Error","Imagen no recibida correctamente");
+                }
+
+                conexion.disconnect();
+            } catch (Exception e) {
+                Log.e("Error", "Error al recuperar la imagen: " + e.getMessage());
+            }
+
+            return imagen;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap imagen) {
+            if (imagen != null) {
+                mostrarImagen(imagen);
+            } else {
+                Log.e("Error", "No se pudo obtener la imagen o la imagen recibida es nula");
+            }
+        }
+    }
+
+
 
     private void showAddTaskDialog() {
         //Metodo que se encarga de mostrar el dialogo de añadir nueva tarea, obtener la informacion introducida y

@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -37,10 +39,15 @@ public class StartActivity extends AppCompatActivity {
     private EditText editTextUsername;
     private EditText editTextPassword;
 
+    private String fotoEnBase64;
+
+    private String user;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start);
+
 
         editTextUsername = findViewById(R.id.edit_text_username);
         editTextPassword = findViewById(R.id.edit_text_password);
@@ -70,6 +77,8 @@ public class StartActivity extends AppCompatActivity {
         // Obtener los valores de usuario y contraseña
         String usuario = editTextUsuario.getText().toString();
         String contrasena = editTextContrasena.getText().toString();
+
+        user = usuario;
 
         // Enviar solicitud al servidor para verificar la autenticación
         String url = "http://34.175.200.65:81/verificar_login.php"; // URL del script para verificar la autenticación
@@ -104,6 +113,7 @@ public class StartActivity extends AppCompatActivity {
                 BufferedReader reader = new BufferedReader(new InputStreamReader(conexion.getInputStream()));
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    Log.d("Buff",line);
                     if (line.contains("Autenticado")) {
                         autenticado = true;
                     }
@@ -121,6 +131,7 @@ public class StartActivity extends AppCompatActivity {
             if (autenticado) {
                 // Si el usuario está autenticado, iniciar la actividad del menú
                 Intent intent = new Intent(StartActivity.this, MainActivity.class);
+                intent.putExtra("usuario",user);
                 startActivity(intent);
             } else {
                 // Si no está autenticado, mostrar un mensaje de error
@@ -147,7 +158,7 @@ public class StartActivity extends AppCompatActivity {
 
                 // Guardar los datos del nuevo usuario utilizando el método saveNewUser
                 // Implementa este método para comunicarte con tu servidor y guardar los datos en la base de datos
-                saveNewUser(newUsername, newPassword);
+                saveNewUser(newUsername, newPassword, fotoEnBase64);
             }
         });
         dialogBuilder.setNegativeButton("Cancelar", new DialogInterface.OnClickListener() {
@@ -174,22 +185,24 @@ public class StartActivity extends AppCompatActivity {
                 if (result.getResultCode() == RESULT_OK &&
                         result.getData()!= null) {
                     Bundle bundle = result.getData().getExtras();
-                    ImageView elImageView = findViewById(R.id.imageViewCapturedImage);
                     Bitmap laminiatura = (Bitmap) bundle.get("data");
-                    elImageView.setImageBitmap(laminiatura);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    laminiatura.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    byte[] fototransformada = stream.toByteArray();
+                    fotoEnBase64 = Base64.encodeToString(fototransformada,Base64.DEFAULT);
                 } else {
                     Log.d("TakenPicture", "No photo taken");
                 }
             });
 
 
-    private void saveNewUser(String usuario, String contrasena) {
+    private void saveNewUser(String usuario, String contrasena, String foto) {
         // URL de tu archivo PHP en el servidor
         String url = "http://34.175.200.65:81/add_user.php";
 
 
         // Dentro del método enviarDatos()
-        String parametros = "usuario=" + Uri.encode(usuario) + "&contrasena=" + Uri.encode(contrasena);
+        String parametros = "usuario=" + Uri.encode(usuario) + "&contrasena=" + Uri.encode(contrasena) + "&image=" + Uri.encode((foto));
         Log.d("Datos enviados", parametros); // Imprime los datos enviados en el registro (Logcat)
 
 
