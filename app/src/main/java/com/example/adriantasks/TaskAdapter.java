@@ -19,7 +19,7 @@ import java.util.List;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
-    private List<Task> taskList;
+    private List<Tarea> taskList;
     private OnItemClickListener mListener;
 
     public interface OnItemClickListener {
@@ -31,7 +31,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         mListener = listener;
     }
 
-    public TaskAdapter(List<Task> taskList) {
+    public TaskAdapter(List<Tarea> taskList) {
         this.taskList = taskList;
     }
 
@@ -45,7 +45,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull TaskViewHolder holder, int position) {
-        Task task = taskList.get(position);
+        Tarea task = taskList.get(position);
         holder.textViewTitle.setText(task.getTitle());
         holder.textViewDescription.setText(task.getDescription());
         holder.checkBoxCompleted.setChecked(task.isCompleted());

@@ -55,7 +55,7 @@ public class DBHelper extends SQLiteOpenHelper {
         return id;
     }
 
-    public int updateTask(Task task) {
+    public int updateTask(Tarea task) {
         //Metodo que ejecuta una query de tipo UPDATE
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
@@ -78,10 +78,10 @@ public class DBHelper extends SQLiteOpenHelper {
 
     }
 
-    public List<Task> getAllTasks() {
+    public List<Tarea> getAllTasks() {
         //Metodo que se encarga de obtener la informacion de las distintas tareas,
         //crear objetos de tipo Task con esa informacion, añadirlas a un Array y pasarselo a la aplicaccion
-        List<Task> taskList = new ArrayList<>();
+        List<Tarea> taskList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_NAME, null);
         if (cursor != null) {
@@ -98,7 +98,7 @@ public class DBHelper extends SQLiteOpenHelper {
                         String description = cursor.getString(columnIndexDescription);
                         boolean completed = cursor.getInt(columnIndexCompleted) == 1;
 
-                        Task task = new Task(id,title, description, completed);
+                        Tarea task = new Tarea(id,title, description, completed);
                         taskList.add(task);
                     } while (cursor.moveToNext());
                 }

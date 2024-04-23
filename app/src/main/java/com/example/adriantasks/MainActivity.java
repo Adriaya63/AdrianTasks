@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
 //Clase principal de la aplicacion
     //Atributos de la clase
     private DBHelper dbHelper;
-    private List<Task> taskList;
+    private List<Tarea> taskList;
     private TaskAdapter taskAdapter;
     private RecyclerView recyclerViewTasks;
     private String idioma = "es";
@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (!title.isEmpty() && !description.isEmpty()) {
                     long taskId = dbHelper.addTask(title,description);
-                    Task newTask = new Task(taskId,title, description, false);
+                    Tarea newTask = new Tarea(taskId,title, description, false);
                     newTask.setId((int)taskId);
                     taskList.add(newTask);
                     taskAdapter.notifyDataSetChanged();
@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         final EditText editTextTitle = dialogView.findViewById(R.id.edit_text_title);
         final EditText editTextDescription = dialogView.findViewById(R.id.edit_text_description);
 
-        Task task = taskList.get(position);
+        Tarea task = taskList.get(position);
         editTextTitle.setText(task.getTitle());
         editTextDescription.setText(task.getDescription());
 
@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
                 String description = editTextDescription.getText().toString().trim();
 
                 if (!title.isEmpty() && !description.isEmpty()) {
-                    Task updatedTask = taskList.get(position);
+                    Tarea updatedTask = taskList.get(position);
                     updatedTask.setTitle(title);
                     updatedTask.setDescription(description);
                     dbHelper.updateTask(updatedTask);
@@ -285,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void deleteTask(int position) {
-        Task task = taskList.get(position);
+        Tarea task = taskList.get(position);
         dbHelper.deleteTask(task.getId());
         taskList.remove(position);
         taskAdapter.notifyItemRemoved(position);

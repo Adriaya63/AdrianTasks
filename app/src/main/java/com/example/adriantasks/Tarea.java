@@ -1,12 +1,12 @@
 package com.example.adriantasks;
 
-public class Task {
+public class Tarea {
     private long id;
     private String title;
     private String description;
     private boolean completed;
 
-    public Task(long id, String title, String description, boolean completed) {
+    public Tarea(long id, String title, String description, boolean completed) {
         this.id = id;
         this.title = title;
         this.description = description;
